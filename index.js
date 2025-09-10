@@ -1,5 +1,13 @@
 // index.js - Express + Multer + Whisper transcription with FFmpeg 8
 
+app.post('/subtitles', upload.single('file'), (req, res) => {
+  console.log('🎬 Fichier reçu :', req.file);
+
+  if (!req.file) {
+    return res.status(400).send("No file uploaded");
+  }
+
+
 import express from 'express';
 import multer from 'multer';
 import { exec } from 'child_process';
