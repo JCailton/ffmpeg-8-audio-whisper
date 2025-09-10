@@ -1,12 +1,4 @@
-// index.js - Express + Multer + Whisper transcription with FFmpeg 8
-
-app.post('/subtitles', upload.single('file'), (req, res) => {
-  console.log('🎬 Fichier reçu :', req.file);
-
-  if (!req.file) {
-    return res.status(400).send("No file uploaded");
-  }
-
+// index.js - Express + Multer + FFmpeg 8 + Whisper subtitle generation
 
 import express from 'express';
 import multer from 'multer';
@@ -19,39 +11,38 @@ const upload = multer({ dest: 'uploads/' });
 
 const PORT = process.env.PORT || 10000;
 
+// Route pour générer les sous-titres
 app.post('/subtitle', upload.single('Video'), async (req, res) => {
-  try {
-    if (!req.Video) {
-      return res.status(400).send("No Video uploaded under field 'Video'");
+  console.log('🎬 Fichier reçu :', req.Video);
+
+  if (!req.Video) {
+    return res.status(400).send("No Video uploaded under field 'Video'");
+  }
+
+  const inputPath = req.Video.path;
+  const outputPath = `output-${Date.now()}.srt`;
+
+  // ⚠️ FFmpeg 8 avec Whisper intégré
+  const cmd = `ffmpeg -i ${inputPath} -f srt -whisper 1 -whisper_language fr ${outputPath}`;
+
+  exec(cmd, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`FFmpeg error: ${error.message}`);
+      return res.status(500).send('Error generating subtitles.');
     }
 
-    const inputPath = req.Video.path;
-    const outputPath = `output-${Date.now()}.srt`;
-
-    // Command to generate subtitle using whisper in French (change -whisper_language if needed)
-    const cmd = `ffmpeg -i ${inputPath} -f srt -whisper_language fr ${outputPath}`;
-
-    exec(cmd, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`FFmpeg error: ${error.message}`);
-        return res.status(500).send('Error generating subtitles.');
-      }
-
-      res.download(outputPath, () => {
-        fs.unlinkSync(inputPath);
-        fs.unlinkSync(outputPath);
-      });
+    res.download(outputPath, () => {
+      fs.unlinkSync(inputPath);
+      fs.unlinkSync(outputPath);
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Unexpected server error.');
-  }
+  });
 });
 
+// Route de test GET /
 app.get('/', (req, res) => {
-  res.send('FFmpeg Whisper subtitle server is running.');
+  res.send('✅ FFmpeg + Whisper server is running.');
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
